@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Stock">
 <meta name="theme-color" content="#14213d">
+<link rel="manifest" href="manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2314213d'/%3E%3Crect x='14' y='22' width='36' height='28' rx='3' fill='none' stroke='%23f5c518' stroke-width='4'/%3E%3Cpath d='M14 30h36' stroke='%23f5c518' stroke-width='4'/%3E%3Crect x='26' y='14' width='12' height='8' fill='%23f5c518'/%3E%3C/svg%3E">
 <style>
   :root {
@@ -263,13 +264,6 @@ $('file').onchange = async e => {
   } catch { alert('Fichier invalide : il faut un export JSON de cette appli.'); }
   e.target.value = '';
 };
-
-// Manifeste PWA injecté (nom + icône sur l’écran d’accueil)
-const manifest = { name: 'Stock', short_name: 'Stock', display: 'standalone', start_url: './',
-  background_color: '#eef1f4', theme_color: '#14213d',
-  icons: [{ src: document.querySelector('link[rel=icon]').href, sizes: 'any', type: 'image/svg+xml' }] };
-document.head.appendChild(Object.assign(document.createElement('link'),
-  { rel: 'manifest', href: URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/json' })) }));
 
 // Mise en cache pour un usage hors ligne (ne fonctionne qu'en https / hébergé)
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

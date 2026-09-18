@@ -1,6 +1,6 @@
 // Service worker : met l'appli en cache pour qu'elle s'ouvre hors ligne.
-const CACHE = 'stock-v1';
-const FILES = ['./', './index.html', './sw.js'];
+const CACHE = 'stock-v2';
+const FILES = ['./', './index.html', './sw.js', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
