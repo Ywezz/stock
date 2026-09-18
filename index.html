@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stock</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stock">
+<meta name="theme-color" content="#14213d">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2314213d'/%3E%3Crect x='14' y='22' width='36' height='28' rx='3' fill='none' stroke='%23f5c518' stroke-width='4'/%3E%3Cpath d='M14 30h36' stroke='%23f5c518' stroke-width='4'/%3E%3Crect x='26' y='14' width='12' height='8' fill='%23f5c518'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #eef1f4; --ink: #14213d; --muted: #6b7380; --line: #d3d8df;
+    --paper: #ffffff; --tape: #f5c518; --danger: #b3261e;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.4 "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent; }
+  body { padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+  header { position: sticky; top: 0; background: var(--ink); color: #fff;
+    padding: 14px 16px 12px; z-index: 5; }
+  header h1 { margin: 0 0 10px; font-size: 22px; font-weight: 600; letter-spacing: .01em;
+    display: flex; align-items: center; gap: 10px; }
+  header h1 button { margin-left: auto; }
+  .search { position: relative; }
+  .search input { width: 100%; border: 0; border-radius: 10px; padding: 12px 40px 12px 14px;
+    font-size: 17px; background: #fff; color: var(--ink); }
+  .search input:focus { outline: 3px solid var(--tape); }
+  .search .clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    background: none; border: 0; color: var(--muted); font-size: 22px; padding: 4px 8px; }
+  main { padding: 16px; max-width: 620px; margin: 0 auto; }
+  .list { display: flex; flex-direction: column; gap: 10px; }
+  .box { background: var(--paper); border-radius: 10px; padding: 14px 14px 14px 18px;
+    position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px;
+    cursor: pointer; border: 1px solid var(--line); }
+  .box::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--tape); }
+  .box .name { font-weight: 600; font-size: 18px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .box .count { color: var(--muted); font-size: 15px; white-space: nowrap; }
+  .hit { background: var(--paper); border-radius: 10px; padding: 16px 18px; cursor: pointer;
+    border: 1px solid var(--line); border-left: 6px solid var(--tape); }
+  .hit .name { font-size: 22px; font-weight: 700; }
+  .hit .in { color: var(--muted); font-size: 15px; margin-top: 2px; }
+  .empty { color: var(--muted); text-align: center; padding: 40px 12px; }
+  .row { display: flex; gap: 8px; margin-top: 16px; }
+  .row input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 14px; font-size: 17px; background: #fff; color: var(--ink); }
+  .row input:focus { outline: 3px solid var(--tape); border-color: transparent; }
+  button { font: inherit; cursor: pointer; }
+  .btn { background: var(--ink); color: #fff; border: 0; border-radius: 10px; padding: 12px 16px; font-weight: 600; }
+  .ghost { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.4);
+    border-radius: 8px; padding: 6px 10px; font-size: 14px; }
+  .item { background: var(--paper); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 8px 12px 14px; display: flex; align-items: center; gap: 8px; }
+  .item .label { flex: 1; overflow-wrap: anywhere; }
+  .item .qty { display: flex; align-items: center; gap: 2px; }
+  .item .qty button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line);
+    background: #fff; color: var(--ink); font-size: 18px; }
+  .item .qty span { min-width: 28px; text-align: center; font-variant-numeric: tabular-nums; }
+  .del { background: none; border: 0; color: var(--danger); font-size: 20px; padding: 6px 8px; }
+  .toolbar { display: flex; gap: 8px; justify-content: space-between; margin-top: 28px;
+    font-size: 15px; color: var(--muted); flex-wrap: wrap; }
+  .toolbar button { background: none; border: 0; color: var(--muted); text-decoration: underline; padding: 6px 0; }
+  .toolbar .danger { color: var(--danger); }
+  [hidden] { display: none !important; }
+  @media (prefers-reduced-motion: no-preference) { .box, .hit, .item { transition: transform .08s; } .box:active, .hit:active { transform: scale(.985); } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>
+    <button id="back" class="ghost" hidden>‹ Boîtes</button>
+    <span id="title">Stock</span>
+    <button id="rename" class="ghost" hidden>Renommer</button>
+  </h1>
+  <div class="search" id="searchWrap">
+    <input id="q" type="search" placeholder="Chercher un objet…" autocomplete="off" enterkeyhint="search">
+    <button class="clear" id="clearQ" hidden aria-label="Effacer">×</button>
+  </div>
+</header>
+
+<main>
+  <!-- Vue résultats -->
+  <section id="results" hidden>
+    <div class="list" id="hitList"></div>
+  </section>
+
+  <!-- Vue boîtes -->
+  <section id="boxes">
+    <div class="list" id="boxList"></div>
+    <div class="row">
+      <input id="newBox" placeholder="Nouvelle boîte (ex. caisse 1, boîte rouge)" enterkeyhint="done">
+      <button class="btn" id="addBox">Ajouter</button>
+    </div>
+    <div class="toolbar">
+      <button id="export">Exporter (sauvegarde)</button>
+      <button id="import">Importer</button>
+      <input id="file" type="file" accept="application/json" hidden>
+    </div>
+  </section>
+
+  <!-- Vue une boîte -->
+  <section id="box" hidden>
+    <div class="list" id="itemList"></div>
+    <div class="row">
+      <input id="newItem" placeholder="Ajouter un objet" enterkeyhint="done">
+      <button class="btn" id="addItem">Ajouter</button>
+    </div>
+    <div class="toolbar">
+      <span id="boxInfo"></span>
+      <button class="danger" id="delBox">Supprimer cette boîte</button>
+    </div>
+  </section>
+</main>
+
+<script>
+// ---------- Données ----------
+const KEY = 'stock-v1';
+let boxes = load();            // [{id, name, items:[{name, qty}]}]
+let current = null;            // id de la boîte ouverte
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; }
+}
+function save() { localStorage.setItem(KEY, JSON.stringify(boxes)); }
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+// Normalisation : minuscules + sans accents, pour comparer et chercher
+const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+// ---------- Éléments ----------
+const $ = id => document.getElementById(id);
+const views = { results: $('results'), boxes: $('boxes'), box: $('box') };
+
+function show(name) {
+  for (const k in views) views[k].hidden = k !== name;
+  $('back').hidden = name !== 'box';
+  $('rename').hidden = name !== 'box';
+  $('searchWrap').hidden = name === 'box';
+  $('title').textContent = name === 'box' ? boxOf(current).name : 'Stock';
+}
+const boxOf = id => boxes.find(b => b.id === id);
+
+// ---------- Rendu ----------
+function renderBoxes() {
+  const el = $('boxList');
+  el.innerHTML = '';
+  if (!boxes.length) { el.innerHTML = '<p class="empty">Aucune boîte pour l’instant. Crée-en une ci-dessous.</p>'; return; }
+  for (const b of boxes) {
+    const d = document.createElement('div');
+    d.className = 'box';
+    const n = b.items.reduce((s, i) => s + i.qty, 0);
+    d.innerHTML = `<span class="name"></span><span class="count">${n} objet${n > 1 ? 's' : ''}</span>`;
+    d.querySelector('.name').textContent = b.name;
+    d.onclick = () => openBox(b.id);
+    el.appendChild(d);
+  }
+}
+
+function renderBox() {
+  const b = boxOf(current);
+  const el = $('itemList');
+  el.innerHTML = '';
+  if (!b.items.length) el.innerHTML = '<p class="empty">Boîte vide. Ajoute ce que tu y ranges.</p>';
+  b.items.forEach((it, idx) => {
+    const d = document.createElement('div');
+    d.className = 'item';
+    d.innerHTML = `<span class="label"></span>
+      <span class="qty"><button aria-label="moins">−</button><span>${it.qty}</span><button aria-label="plus">+</button></span>
+      <button class="del" aria-label="retirer">×</button>`;
+    d.querySelector('.label').textContent = it.name;
+    const [minus, plus] = d.querySelectorAll('.qty button');
+    minus.onclick = () => { if (it.qty > 1) it.qty--; else b.items.splice(idx, 1); save(); renderBox(); };
+    plus.onclick = () => { it.qty++; save(); renderBox(); };
+    d.querySelector('.del').onclick = () => { b.items.splice(idx, 1); save(); renderBox(); };
+    el.appendChild(d);
+  });
+  $('boxInfo').textContent = `${b.items.length} référence${b.items.length > 1 ? 's' : ''}`;
+}
+
+// ---------- Recherche → nom de boîte ----------
+function search(q) {
+  q = norm(q);
+  const el = $('hitList');
+  el.innerHTML = '';
+  if (!q) { show('boxes'); return; }
+  const hits = [];
+  for (const b of boxes) {
+    const m = b.items.filter(i => norm(i.name).includes(q));
+    if (m.length) hits.push({ b, m });
+  }
+  show('results');
+  if (!hits.length) { el.innerHTML = '<p class="empty">Aucun objet ne correspond.</p>'; return; }
+  for (const { b, m } of hits) {
+    const d = document.createElement('div');
+    d.className = 'hit';
+    d.innerHTML = `<div class="name"></div><div class="in"></div>`;
+    d.querySelector('.name').textContent = b.name;
+    d.querySelector('.in').textContent = m.map(i => i.name).join(', ');
+    d.onclick = () => openBox(b.id);
+    el.appendChild(d);
+  }
+}
+
+// ---------- Actions ----------
+function openBox(id) { current = id; renderBox(); show('box'); }
+
+function addBox() {
+  const name = $('newBox').value.trim();
+  if (!name) return;
+  boxes.push({ id: uid(), name, items: [] });
+  $('newBox').value = '';
+  save(); renderBoxes();
+}
+
+function addItem() {
+  const name = $('newItem').value.trim();
+  if (!name) return;
+  const b = boxOf(current);
+  const existing = b.items.find(i => norm(i.name) === norm(name));
+  if (existing) existing.qty++; else b.items.push({ name, qty: 1 });
+  $('newItem').value = '';
+  save(); renderBox();
+}
+
+$('addBox').onclick = addBox;
+$('newBox').addEventListener('keydown', e => e.key === 'Enter' && addBox());
+$('addItem').onclick = addItem;
+$('newItem').addEventListener('keydown', e => e.key === 'Enter' && addItem());
+
+$('back').onclick = () => { current = null; renderBoxes(); show('boxes'); };
+$('rename').onclick = () => {
+  const b = boxOf(current);
+  const n = prompt('Nouveau nom de la boîte', b.name);
+  if (n && n.trim()) { b.name = n.trim(); save(); $('title').textContent = b.name; }
+};
+$('delBox').onclick = () => {
+  const b = boxOf(current);
+  if (confirm(`Supprimer « ${b.name} » et son contenu ?`)) {
+    boxes = boxes.filter(x => x.id !== current); current = null;
+    save(); renderBoxes(); show('boxes');
+  }
+};
+
+$('q').addEventListener('input', e => { $('clearQ').hidden = !e.target.value; search(e.target.value); });
+$('clearQ').onclick = () => { $('q').value = ''; $('clearQ').hidden = true; search(''); };
+
+// Sauvegarde / restauration en JSON
+$('export').onclick = () => {
+  const blob = new Blob([JSON.stringify(boxes, null, 2)], { type: 'application/json' });
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'stock.json' });
+  a.click(); URL.revokeObjectURL(a.href);
+};
+$('import').onclick = () => $('file').click();
+$('file').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (!Array.isArray(data)) throw 0;
+    if (confirm('Remplacer le stock actuel par le fichier importé ?')) { boxes = data; save(); renderBoxes(); }
+  } catch { alert('Fichier invalide : il faut un export JSON de cette appli.'); }
+  e.target.value = '';
+};
+
+// Manifeste PWA injecté (nom + icône sur l’écran d’accueil)
+const manifest = { name: 'Stock', short_name: 'Stock', display: 'standalone', start_url: './',
+  background_color: '#eef1f4', theme_color: '#14213d',
+  icons: [{ src: document.querySelector('link[rel=icon]').href, sizes: 'any', type: 'image/svg+xml' }] };
+document.head.appendChild(Object.assign(document.createElement('link'),
+  { rel: 'manifest', href: URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/json' })) }));
+
+// Mise en cache pour un usage hors ligne (ne fonctionne qu'en https / hébergé)
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+renderBoxes();
+</script>
+</body>
+</html>
